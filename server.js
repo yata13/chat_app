@@ -4,10 +4,11 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
   cors: {
-    origin: "https://chat-app-d4b18.web.app", // Firebase frontend
+    origin: "https://chat-app-d4b18.web.app",
     methods: ["GET", "POST"]
   }
 });
+
 
 // CORS for HTTP routes
 app.use(cors({
@@ -30,3 +31,4 @@ const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
