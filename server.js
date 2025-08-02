@@ -1,36 +1,32 @@
-const cors = require("cors");
-const express = require("express");
+const express = require('express');
+const cors = require('cors');
 const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http, {
+const http = require('http').createServer(app);
+const io = require('socket.io')(http, {
   cors: {
-    origin: "*", // or set to your Firebase site URL for more security
+    origin: "https://chat-app-d4b18.web.app", // Firebase frontend
     methods: ["GET", "POST"]
   }
 });
 
-app.use(cors());
-app.use(express.static("public")); // optional if you serve static
+// CORS for HTTP routes
+app.use(cors({
+  origin: "https://chat-app-d4b18.web.app"
+}));
 
-// Socket stuff
-io.on("connection", (socket) => {
-  console.log("✅ Client connected");
+app.get('/', (req, res) => {
+  res.send("Socket server running 🎉");
+});
 
-  socket.on("chat message", (msg) => {
-    io.emit("chat message", msg);
-  });
+io.on('connection', (socket) => {
+  console.log("🔌 User connected");
 
-  socket.on("user joined", (name) => {
-    io.emit("user joined", name);
-  });
-
-  socket.on("typing", (name) => {
-    socket.broadcast.emit("typing", name);
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg);
   });
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
