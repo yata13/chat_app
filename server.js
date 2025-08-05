@@ -2,14 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const http = require('http').createServer(app);
+
 const io = require('socket.io')(http, {
   cors: {
-    origin: "https://chat-app-d4b18.web.app", // allow Firebase frontend
+    origin: "https://chat-app-d4b18.web.app", // Firebase frontend URL
     methods: ["GET", "POST"]
   }
 });
 
-// Enable CORS for HTTP routes too
+// Allow HTTP routes (like `/`) from frontend
 app.use(cors({
   origin: "https://chat-app-d4b18.web.app"
 }));
@@ -19,14 +20,18 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  console.log("✅ User connected");
+  console.log("🔌 User connected");
 
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
+  socket.on('chat message', (data) => {
+    io.emit('chat message', data); // Send full data object to all clients
   });
 
-  socket.on('typing', () => {
-    socket.broadcast.emit('typing', "Someone");
+  socket.on('typing', (name) => {
+    socket.broadcast.emit('typing', name); // Notify others
+  });
+
+  socket.on('disconnect', () => {
+    console.log("❌ User disconnected");
   });
 });
 
