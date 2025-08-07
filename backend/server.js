@@ -3,8 +3,8 @@ const http = require('http');
 const cors = require('cors');
 const path = require('path');
 const { Server } = require('socket.io');
-const connectDB = require('./backend/database/connectDB');
-const authRoutes = require('./backend/router/authRoutes');
+const connectDB = require('./database/connectDB');
+const authRoutes = require('./router/authRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,3 +40,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
