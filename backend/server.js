@@ -1,3 +1,4 @@
+// server.js (CommonJS)
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -9,36 +10,53 @@ const authRoutes = require('./router/authRoutes');
 const app = express();
 const server = http.createServer(app);
 
+/* ---- CORS: allow your Firebase site + local dev ---- */
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:5500',
+  'https://chat-app-d4b18.web.app',   // <-- your Firebase Hosting URL
+];
+
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // allow curl/postman
+      cb(null, ALLOWED_ORIGINS.includes(origin));
+    },
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+
+/* ---- Socket.IO with same CORS ---- */
 const io = new Server(server, {
-  cors: {
-    origin: '*', // or restrict to Firebase frontend
-    methods: ['GET', 'POST'],
-  },
+  cors: { origin: ALLOWED_ORIGINS, credentials: true },
+  transports: ['websocket', 'polling'], // helps with Render cold starts
 });
 
-// 🌐 Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public')); // serve login, signup, etc.
-
-// 🔗 API Routes
+/* ---- Routes ---- */
 app.use('/api/auth', authRoutes);
 
-// 🔌 Socket.IO (modular)
-require('./backend/socket/onlineUsers')(io); // call logic in separate file
+/* ---- Optional: serve static only if you need it for local testing ---- */
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 🧠 Connect MongoDB
-connectDB();
+/* ---- Simple health check for Render ---- */
+app.get('/healthz', (_req, res) => res.status(200).send('ok'));
 
-// 🏠 Fallback route
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
+/* ---- Socket handlers ---- */
+require('./backend/socket/onlineUsers')(io);
 
-// 🚀 Start server
+/* ---- Start only after DB connects ---- */
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
-
+(async () => {
+  try {
+    await connectDB();
+    server.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+})();
