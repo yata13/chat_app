@@ -1,30 +1,27 @@
-let onlineUsers = new Set();
+// backend/socket/onlineUsers.js
+module.exports = (io) => {
+  const online = new Set();
 
-module.exports = function (io) {
   io.on('connection', (socket) => {
-    console.log('⚡ User connected:', socket.id);
+    console.log('socket connected:', socket.id);
 
-    // 👤 User joins with username
-    socket.on('user joined', (username) => {
-      socket.username = username;
-      onlineUsers.add(username);
-
-      console.log('👋', username, 'joined');
-      io.emit('online users', Array.from(onlineUsers)); // broadcast online list
+    socket.on('user:online', (userId) => {
+      socket.data.userId = userId;
+      online.add(userId);
+      io.emit('online:list', Array.from(online));
     });
 
-    // 💬 Chat message
-    socket.on('chat message', (msg) => {
-      io.emit('chat message', msg); // broadcast message to all
+    socket.on('chat:message', (msg) => {
+      // msg = { from, to?, text }
+      io.emit('chat:message', { ...msg, ts: Date.now() });
     });
 
-    // ❌ On disconnect
     socket.on('disconnect', () => {
-      console.log('❌', socket.username || 'User', 'disconnected');
-      if (socket.username) {
-        onlineUsers.delete(socket.username);
-        io.emit('online users', Array.from(onlineUsers));
+      if (socket.data.userId) {
+        online.delete(socket.data.userId);
+        io.emit('online:list', Array.from(online));
       }
+      console.log('socket disconnected:', socket.id);
     });
   });
 };
